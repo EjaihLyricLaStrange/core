@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import ReactDOM from "react-dom";
 import classNames from "classnames";
-import { Column, Flex, Heading, IconButton, Text } from ".";
+import { Column, Flex, Heading, IconButton, ScrollLock, Text } from ".";
 import styles from "./Dialog.module.scss";
 
 interface DialogProps extends Omit<React.ComponentProps<typeof Flex>, "title"> {
@@ -138,11 +138,42 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
     }, [isOpen, handleKeyDown]);
 
     useEffect(() => {
-      if (isOpen) {
-        document.body.style.overflow = "hidden";
-        // Make everything outside the dialog inert
+      // Find the portal container (direct child of body that contains the dialog)
+      const getPortalContainer = (): HTMLElement | null => {
+        let portalContainer: HTMLElement | null = dialogRef.current;
+        while (portalContainer && portalContainer.parentElement !== document.body) {
+          portalContainer = portalContainer.parentElement;
+        }
+        return portalContainer;
+      };
+
+      // Cleanup function to restore inert state
+      const cleanup = () => {
+        // Restore inert on all body children
         document.body.childNodes.forEach((node) => {
-          if (node instanceof HTMLElement && node !== document.getElementById("portal-root")) {
+          if (node instanceof HTMLElement) {
+            node.inert = false;
+          }
+        });
+
+        // Also restore inert on any dialogs (for stacked dialog case)
+        if (stack) {
+          const dialogs = document.querySelectorAll('[role="dialog"]');
+          dialogs.forEach((dialog) => {
+            if (dialog instanceof HTMLElement) {
+              dialog.inert = false;
+            }
+          });
+        }
+      };
+
+      if (isOpen) {
+
+        const portalContainer = getPortalContainer();
+
+        // Make everything outside the dialog inert, except the dialog's own portal container
+        document.body.childNodes.forEach((node) => {
+          if (node instanceof HTMLElement && node !== portalContainer) {
             node.inert = true;
           }
         });
@@ -156,6 +187,9 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
             }
           });
         }
+
+        // Return cleanup function for when component unmounts or isOpen changes
+        return cleanup;
       } else {
         // If this is a stacked dialog closing, restore interactivity to base dialog
         if (stack) {
@@ -172,7 +206,6 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
               node.inert = false;
             }
           });
-          document.body.style.overflow = "unset";
         }
       }
     }, [isOpen, stack]);
@@ -221,7 +254,9 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
     if (!isVisible) return null;
 
     return ReactDOM.createPortal(
-      <Flex
+      <>
+        <ScrollLock enabled={isOpen} allowScrollInElement={dialogRef} />
+        <Flex
         ref={ref}
         transition="macro-medium"
         background="overlay"
@@ -333,7 +368,8 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
             )}
           </Column>
         </Flex>
-      </Flex>,
+      </Flex>
+      </>,
       document.body,
     );
   },
