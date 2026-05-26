@@ -6,8 +6,6 @@ docs: "once-ui/effects/MatrixFx.mdx"
 github: "components/MatrixFx.tsx"
 navLabel: "MatrixFx"
 navIcon: "sparkle"
-navTag: "New"
-navTagVariant: "cyan"
 ---
 
 The `MatrixFx` component creates an animated dot matrix reveal effect using the native Canvas 2D API. It supports instant reveal, progressive reveal on mount, or hover-triggered animations with smooth transitions. Perfect for hero sections, backgrounds, or interactive hover cards.
@@ -598,6 +596,12 @@ export function Demo() {
   ]}
 />
 
+## Performance
+
+MatrixFx automatically detects low-end devices and the `prefers-reduced-motion` system setting. When either is detected, the animation renders a single static frame (no flicker, no bulge animation). You can override this with the `reducedMotion` prop.
+
+See [useReducedMotion](/once-ui/hooks/useReducedMotion) for details.
+
 ## API reference
 
 <PropsTable
@@ -612,6 +616,7 @@ export function Demo() {
     ["fps", "number", "60"],
     ["bulge", '{ type?: "ripple" | "wave"; duration?: number; intensity?: number; repeat?: boolean; delay?: number }', "undefined"],
     ["revealFrom", ["center","top","bottom","left","right"], "center"],
+    ["reducedMotion", ['true', 'false', '"auto"'], '"auto"'],
     ["children"],
     ["...flex"]
   ]}

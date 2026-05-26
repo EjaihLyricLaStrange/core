@@ -6,8 +6,6 @@ docs: "once-ui/effects/shineFx.mdx"
 github: "components/ShineFx.tsx"
 navLabel: "ShineFx"
 navIcon: "sparkle"
-navTag: "New"
-navTagVariant: "cyan"
 ---
 
 ShineFx creates a smooth, animated shine effect that sweeps across text. The effect uses a gradient that moves horizontally, creating a shimmering appearance ideal for drawing attention to important text.
@@ -218,6 +216,12 @@ ShineFx works with all Text component variants and styling props.
   ]}
 />
 
+## Performance
+
+ShineFx automatically detects low-end devices and the `prefers-reduced-motion` system setting. When either is detected, the shine animation is disabled (equivalent to `disabled={true}`). You can override this with the `reducedMotion` prop.
+
+See [useReducedMotion](/once-ui/hooks/useReducedMotion) for details.
+
 ## API reference
 
 <PropsTable
@@ -225,6 +229,8 @@ ShineFx works with all Text component variants and styling props.
     ["speed", "number", "5"],
     ["baseOpacity", "number", "0.3"],
     ["disabled", "boolean", "false"],
+    ["inverse", "boolean", "false"],
+    ["reducedMotion", ['true', 'false', '"auto"'], '"auto"'],
     ["children", "ReactNode"],
     ["...text", "TextProps"],
   ]}

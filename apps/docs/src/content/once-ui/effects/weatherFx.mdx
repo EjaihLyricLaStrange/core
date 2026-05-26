@@ -6,8 +6,6 @@ docs: "once-ui/effects/WeatherFx.mdx"
 github: "components/WeatherFx.tsx"
 navLabel: "WeatherFx"
 navIcon: "sparkle"
-navTag: "New"
-navTagVariant: "cyan"
 ---
 
 The `WeatherFx` component creates animated weather effects using the native Canvas 2D API. It supports rain, snow, falling leaves, and lightning with customizable colors, speed, and intensity. Perfect for backgrounds, hero sections, or thematic content areas.
@@ -994,6 +992,12 @@ export function Demo() {
   ]}
 />
 
+## Performance
+
+WeatherFx automatically detects low-end devices and the `prefers-reduced-motion` system setting. When either is detected, the animation is completely disabled (no particles are rendered). You can override this with the `reducedMotion` prop.
+
+See [useReducedMotion](/once-ui/hooks/useReducedMotion) for details.
+
 ## API reference
 
 <PropsTable
@@ -1006,6 +1010,7 @@ export function Demo() {
     ["duration", "number", "undefined"],
     ["trigger", ["mount","hover","click","manual"], "mount"],
     ["active", "boolean (manual)", "false"],
+    ["reducedMotion", ['true', 'false', '"auto"'], '"auto"'],
     ["children"],
     ["...flex"]
   ]}

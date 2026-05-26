@@ -11,7 +11,6 @@ import {
   OTPInput, 
   PasswordInput, 
   TagInput,
-  Flex,
   Text,
   Kbd,
   useToast,
@@ -185,6 +184,7 @@ export function NumberInputExample() {
     <NumberInput
       id="number-input-example"
       label="Quantity"
+      height="xl"
       value={value}
       onChange={handleChange}
       min={0}
@@ -251,7 +251,7 @@ export function TagInputExample() {
       value={tags}
       onChange={handleChange}
       placeholder="Add interest"
-      hasSuffix={<Kbd position="absolute" top="12" right="12">Enter</Kbd>}
+      hasSuffix={<Kbd position="absolute" top="16" right="12">Enter</Kbd>}
     />
   );
 }

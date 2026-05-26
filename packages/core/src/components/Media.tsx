@@ -1,7 +1,7 @@
 "use client";
 
 import React, { CSSProperties, useState, useRef, useEffect, ReactNode } from "react";
-import { Column, Flex, Row, Skeleton } from ".";
+import { Column, Flex, Row, Skeleton, ScrollLock } from ".";
 import Image from "next/image";
 import classNames from "classnames";
 
@@ -14,11 +14,15 @@ export interface MediaProps extends React.ComponentProps<typeof Flex> {
   enlarge?: boolean;
   src: string;
   unoptimized?: boolean;
-  sizes?: string;
+  sizes?: string | number;
   priority?: boolean;
   caption?: ReactNode;
   fill?: boolean;
   fillWidth?: boolean;
+  loop?: boolean;
+  autoplay?: boolean;
+  sound?: boolean;
+  controls?: boolean;
   style?: CSSProperties;
   className?: string;
 }
@@ -37,6 +41,10 @@ const Media: React.FC<MediaProps> = ({
   height,
   priority,
   caption,
+  loop = true,
+  autoplay = true,
+  sound = false,
+  controls = false,
   style,
   className,
   ...rest
@@ -82,18 +90,6 @@ const Media: React.FC<MediaProps> = ({
     };
   }, [isEnlarged]);
 
-  useEffect(() => {
-    if (isEnlarged) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [isEnlarged]);
-
   const calculateTransform = () => {
     if (!imageRef.current) return {};
 
@@ -124,16 +120,29 @@ const Media: React.FC<MediaProps> = ({
     const match = url.match(
       /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
     );
-    return match
-      ? `https://www.youtube.com/embed/${match[1]}?controls=0&rel=0&modestbranding=1`
-      : "";
+    if (!match) return "";
+
+    const id = match[1];
+    let embedUrl = `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
+
+    if (!controls) embedUrl += "&controls=0";
+    if (autoplay) embedUrl += "&autoplay=1";
+    if (!sound) embedUrl += "&mute=1";
+    if (loop) embedUrl += `&loop=1&playlist=${id}`;
+
+    return embedUrl;
   };
 
   const isVideo = src?.endsWith(".mp4");
   const isYouTube = isYouTubeVideo(src);
+  const resolvedSizes =
+    typeof sizes === "number"
+      ? `(max-width: ${sizes}px) 100vw, ${sizes}px`
+      : sizes;
 
   return (
     <>
+      <ScrollLock enabled={isEnlarged} />
       {isEnlarged && enlarge && typeof document !== 'undefined' && (
         <Flex
           center
@@ -180,9 +189,9 @@ const Media: React.FC<MediaProps> = ({
           {!loading && isVideo && (
             <video
               src={src}
-              autoPlay
-              loop
-              muted
+              autoPlay={autoplay}
+              loop={loop}
+              muted={!sound}
               playsInline
               style={{
                 width: "100%",
@@ -197,7 +206,7 @@ const Media: React.FC<MediaProps> = ({
               height="100%"
               src={getYouTubeEmbedUrl(src)}
               frameBorder="0"
-              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               style={{
                 objectFit: objectFit,
@@ -208,7 +217,7 @@ const Media: React.FC<MediaProps> = ({
             <Image
               src={src}
               alt={alt}
-              sizes={isEnlarged ? "100vw" : sizes}
+              sizes={isEnlarged ? "100vw" : resolvedSizes}
               priority={priority}
               unoptimized={unoptimized}
               fill={fill || !aspectRatio}

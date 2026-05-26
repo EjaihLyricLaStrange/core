@@ -13,7 +13,7 @@
     }
 }
 
-.textareaBase {
+.resizeHandle {
     &::after {
         pointer-events: none;
         content: '';
@@ -39,29 +39,41 @@
     color: var(--neutral-on-background-medium);
     pointer-events: none;
     transform-origin: left;
-}
-
-.inputLabel {
-    top: 50%;
-    transform: translateY(-50%);
 
     &.floating {
         transform: scale(0.75);
     }
 }
 
-.textareaLabel {
-    top: var(--static-space-16);
+.inputLabel {
+    top: 50%;
+    transform: translateY(-50%);
+}
 
-    &.floating {
-        transform: scale(0.75) translateY(calc(-1 * var(--static-space-16)));
+.textareaLabel {
+    top: calc(var(--static-space-16) + var(--static-space-2));
+}
+
+.xs {
+    min-height: var(--static-space-40);
+
+    .label, .textareaLabel {
+        &.floating {
+            top: calc(var(--static-space-4) - var(--static-space-1));
+        }
+    }
+
+    .inputLabel, .textareaLabel {
+        &.floating {
+            transform: scale(0.6);
+        }
     }
 }
 
 .s {
     min-height: var(--static-space-48);
 
-    .label {
+    .label, .textareaLabel {
         &.floating {
             top: calc(var(--static-space-4) - var(--static-space-1));
         }
@@ -69,9 +81,43 @@
 }
 
 .m {
+    min-height: var(--static-space-56);
+    
+    .label, .textareaLabel {
+        &.floating {
+            top: calc(var(--static-space-8) - var(--static-space-2));
+        }
+    }
+}
+
+.l {
+    min-height: var(--static-space-64);
+    
     .label {
         &.floating {
             top: calc(var(--static-space-8) - var(--static-space-2));
+        }
+    }
+
+    .textareaLabel {
+        &.floating {
+            top: var(--static-space-4);
+        }
+    }
+}
+
+.xl {
+    min-height: var(--static-space-72);
+    
+    .label {
+        &.floating {
+            top: calc(var(--static-space-12) - var(--static-space-2));
+        }
+    }
+    
+    .textareaLabel {
+        &.floating {
+            top: var(--static-space-4);
         }
     }
 }
@@ -82,8 +128,9 @@
     border: none;
     background: none;
     color: var(--neutral-on-background-strong);
-    padding: 0 var(--static-space-16);
+    padding: 0 var(--static-space-12);
     outline: none;
+    border-radius: var(--radius-s);
 
     &.placeholder {
         padding-top: 0;
@@ -130,6 +177,13 @@
 
     .label {
         color: var(--danger-on-background-weak);
+    }
+
+    .resizeHandle {
+        &::after {
+            border-color: var(--danger-border-medium);
+            background-color: var(--danger-alpha-weak);
+        }
     }
 }
 

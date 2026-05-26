@@ -9,7 +9,7 @@ import React, {
   ReactNode,
 } from "react";
 import classNames from "classnames";
-import { Column, Row, Text } from ".";
+import { Column, Row, Text, Spinner } from ".";
 import styles from "./Input.module.scss";
 import { useDebounce } from "../hooks/useDebounce";
 
@@ -17,7 +17,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string;
   label?: string;
   placeholder?: string;
-  height?: "s" | "m";
+  height?: "xs" | "s" | "m" | "l" | "xl";
   error?: boolean;
   errorMessage?: ReactNode;
   description?: ReactNode;
@@ -35,9 +35,11 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   style?: React.CSSProperties;
   hasPrefix?: ReactNode;
   hasSuffix?: ReactNode;
+  variant?: "default" | "ghost";
   characterCount?: boolean;
   cursor?: undefined | "interactive";
   validate?: (value: ReactNode) => ReactNode | null;
+  loading?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -55,7 +57,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       style,
       hasPrefix,
       hasSuffix,
+      variant = "default",
       characterCount,
+      loading = false,
       children,
       onFocus,
       onBlur,
@@ -113,11 +117,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const displayError = validationError || errorMessage;
 
+    const fontSizeMap = {
+      xs: "font-s",
+      s: "font-s",
+      m: "font-m",
+      l: "font-l",
+      xl: "font-xl",
+    };
+
     const inputClassNames = classNames(
       styles.input,
       "font-body",
       "font-default",
-      "font-m",
+      fontSizeMap[height],
       cursor === "interactive" ? "cursor-interactive" : undefined,
       {
         [styles.filled]: isFilled,
@@ -142,18 +154,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       >
         <Row
           transition="micro-medium"
-          border="neutral-medium"
-          background="neutral-alpha-weak"
+          border={variant === "ghost" ? "transparent" : "neutral-medium"}
+          background={variant === "ghost" ? "transparent" : "neutral-alpha-weak"}
           overflow="hidden"
           vertical="stretch"
           className={classNames(
             styles.base,
-            {
-              [styles.s]: height === "s",
-            },
-            {
-              [styles.m]: height === "m",
-            },
+            height && styles[height],
             radius === "none" ? "radius-none" : radius ? `radius-l-${radius}` : "radius-l",
           )}
         >
@@ -162,7 +169,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               {hasPrefix}
             </Row>
           )}
-          <Column fillWidth>
+          <Column fillWidth padding="4">
             <input
               {...props}
               ref={ref}
@@ -204,7 +211,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               </Text>
             </Row>
           )}
-          {hasSuffix && (
+          {loading && (
+            <Row paddingRight="12" className={styles.suffix} position="static">
+              <Spinner size="s" />
+            </Row>
+          )}
+          {hasSuffix && !loading && (
             <Row paddingRight="12" className={styles.suffix} position="static">
               {hasSuffix}
             </Row>

@@ -69,6 +69,7 @@ export interface TextProps<T extends ElementType = "span"> extends HTMLAttribute
   wrap?: CSSProperties["textWrap"];
   size?: TextSize;
   weight?: TextWeight;
+  family?: TextType;
   truncate?: boolean;
 }
 
@@ -117,48 +118,15 @@ export interface StyleProps extends HTMLAttributes<HTMLDivElement> {
   textSize?: TextSize;
   textType?: TextType;
   textWeight?: TextWeight;
-  background?:
-    | Colors
-    | "surface"
-    | "overlay"
-    | "page"
-    | "transparent";
+  background?: Colors | "surface" | "overlay" | "page" | "transparent";
   solid?: Colors;
-  borderTop?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
-  borderRight?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
-  borderBottom?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
-  borderLeft?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
-  borderX?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
-  borderY?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
-  border?:
-    | Colors
-    | "surface"
-    | "transparent"
-    | boolean;
+  borderTop?: Colors | "surface" | "transparent" | boolean;
+  borderRight?: Colors | "surface" | "transparent" | boolean;
+  borderBottom?: Colors | "surface" | "transparent" | boolean;
+  borderLeft?: Colors | "surface" | "transparent" | boolean;
+  borderX?: Colors | "surface" | "transparent" | boolean;
+  borderY?: Colors | "surface" | "transparent" | boolean;
+  border?: Colors | "surface" | "transparent" | boolean;
   borderStyle?: "solid" | "dashed";
   borderWidth?: 1 | 2 | 4 | 6 | 8 | "1" | "2" | "4" | "6" | "8";
   topRadius?: RadiusSize;
@@ -192,7 +160,31 @@ export interface DisplayProps extends HTMLAttributes<HTMLDivElement> {
     | "macro-medium"
     | "macro-long";
   opacity?: opacity;
-  zIndex?: -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | "-1" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10";
+  zIndex?:
+    | -1
+    | 0
+    | 1
+    | 2
+    | 3
+    | 4
+    | 5
+    | 6
+    | 7
+    | 8
+    | 9
+    | 10
+    | "-1"
+    | "0"
+    | "1"
+    | "2"
+    | "3"
+    | "4"
+    | "5"
+    | "6"
+    | "7"
+    | "8"
+    | "9"
+    | "10";
   dark?: boolean;
   light?: boolean;
 }
@@ -204,4 +196,38 @@ export interface CommonProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   children?: ReactNode;
   style?: React.CSSProperties;
+}
+
+interface BaseBreakpointProps {
+  position?: CSSProperties["position"];
+  hide?: boolean;
+}
+
+export interface FlexBreakpointProps extends BaseBreakpointProps {
+  direction?: "row" | "column" | "row-reverse" | "column-reverse";
+  horizontal?: "start" | "center" | "end" | "between" | "around" | "even" | "stretch";
+  vertical?: "start" | "center" | "end" | "between" | "around" | "even" | "stretch";
+  center?: boolean;
+  overflow?: CSSProperties["overflow"];
+  overflowX?: CSSProperties["overflowX"];
+  overflowY?: CSSProperties["overflowY"];
+  top?: SpacingToken;
+  right?: SpacingToken;
+  bottom?: SpacingToken;
+  left?: SpacingToken;
+  aspectRatio?: CSSProperties["aspectRatio"];
+  style?: CSSProperties;
+}
+
+export interface GridBreakpointProps extends BaseBreakpointProps {
+  columns?: GridProps["columns"];
+  overflow?: CSSProperties["overflow"];
+  overflowX?: CSSProperties["overflowX"];
+  overflowY?: CSSProperties["overflowY"];
+  top?: SpacingToken;
+  right?: SpacingToken;
+  bottom?: SpacingToken;
+  left?: SpacingToken;
+  aspectRatio?: CSSProperties["aspectRatio"];
+  style?: CSSProperties;
 }

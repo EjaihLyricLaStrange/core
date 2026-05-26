@@ -8,6 +8,7 @@ import React, {
   forwardRef,
   useState,
   useContext,
+  useId,
 } from "react";
 import ReactDOM from "react-dom";
 import classNames from "classnames";
@@ -25,6 +26,7 @@ interface DialogProps extends Omit<React.ComponentProps<typeof Flex>, "title"> {
   stack?: boolean;
   onHeightChange?: (height: number) => void;
   minHeight?: number;
+  closeOnClickaway?: boolean;
 }
 
 const DialogContext = React.createContext<{
@@ -55,6 +57,7 @@ export const DialogProvider: React.FC<{
 const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
   (
     {
+      closeOnClickaway = true,
       isOpen,
       onClose,
       title,
@@ -70,6 +73,10 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
     ref,
   ) => {
     const dialogRef = useRef<HTMLDivElement>(null);
+    const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+    const dialogId = useId();
+    const dialogTitleId = `${dialogId}-title`;
     const [isVisible, setIsVisible] = useState(isOpen);
     const [isAnimating, setIsAnimating] = useState(false);
     const { stackedDialogOpen, setStackedDialogOpen } = useContext(DialogContext);
@@ -88,17 +95,37 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
     }, [isVisible, onHeightChange]);
 
     useEffect(() => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
+
       if (isOpen) {
+        previouslyFocusedElementRef.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setIsVisible(true);
-        setTimeout(() => {
+        animationTimerRef.current = setTimeout(() => {
           setIsAnimating(true);
+          animationTimerRef.current = null;
         }, 0);
       } else {
         setIsAnimating(false);
-        setTimeout(() => {
+        animationTimerRef.current = setTimeout(() => {
           setIsVisible(false);
+          previouslyFocusedElementRef.current?.focus();
+          previouslyFocusedElementRef.current = null;
+          animationTimerRef.current = null;
         }, 300);
       }
+
+      return () => {
+        if (animationTimerRef.current) {
+          clearTimeout(animationTimerRef.current);
+          animationTimerRef.current = null;
+          previouslyFocusedElementRef.current?.focus();
+          previouslyFocusedElementRef.current = null;
+        }
+      };
     }, [isOpen]);
 
     const handleKeyDown = useCallback(
@@ -232,6 +259,8 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
         }
 
         if (!dialogRef.current?.contains(event.target as Node)) {
+          if (!closeOnClickaway) return;
+          
           if (stack || !base) {
             event.preventDefault();
             onClose();
@@ -257,118 +286,118 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
       <>
         <ScrollLock enabled={isOpen} allowScrollInElement={dialogRef} />
         <Flex
-        ref={ref}
-        transition="macro-medium"
-        background="overlay"
-        position="fixed"
-        zIndex={base ? 8 : 9}
-        top="0"
-        left="0"
-        right="0"
-        bottom="0"
-        className={classNames(styles.overlay, {
-          [styles.open]: isAnimating,
-        })}
-        center
-        padding="l"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dialog-title"
-      >
-        <Flex
-          fill
-          center
+          ref={ref}
           transition="macro-medium"
-          style={{
-            transform: base ? "scale(0.94) translateY(-1.25rem)" : "",
-          }}
+          background="overlay"
+          position="fixed"
+          zIndex={base ? 8 : 9}
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          className={classNames(styles.overlay, {
+            [styles.open]: isAnimating,
+          })}
+          center
+          padding="l"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={dialogTitleId}
         >
-          <Column
-            position="unset"
-            className={classNames(styles.dialog, {
-              [styles.open]: isAnimating,
-            })}
-            style={{
-              minHeight: minHeight ? `${minHeight}px` : undefined,
-            }}
-            ref={dialogRef}
-            fillWidth
+          <Flex
+            fill
+            center
             transition="macro-medium"
-            shadow="xl"
-            radius="xl"
-            border="neutral-medium"
-            background="neutral-weak"
-            tabIndex={-1}
-            onKeyDown={(e) => {
-              if (e.key === "Tab") {
-                const focusableElements = Array.from(
-                  dialogRef.current?.querySelectorAll(
-                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-                  ) || [],
-                );
-
-                if (focusableElements.length === 0) return;
-
-                const firstElement = focusableElements[0] as HTMLElement;
-                const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-                if (e.shiftKey && document.activeElement === firstElement) {
-                  e.preventDefault();
-                  lastElement.focus();
-                } else if (!e.shiftKey && document.activeElement === lastElement) {
-                  e.preventDefault();
-                  firstElement.focus();
-                }
-              }
+            style={{
+              transform: base ? "scale(0.94) translateY(-1.25rem)" : "",
             }}
-            {...rest}
           >
             <Column
-              as="header"
-              paddingX="24"
-              paddingTop="24"
-              paddingBottom="s"
-              gap="4"
+              position="unset"
+              className={classNames(styles.dialog, {
+                [styles.open]: isAnimating,
+              })}
+              style={{
+                minHeight: minHeight ? `${minHeight}px` : undefined,
+              }}
+              ref={dialogRef}
+              fillWidth
+              transition="macro-medium"
+              shadow="xl"
+              radius="xl"
+              border="neutral-medium"
+              background="neutral-weak"
+              tabIndex={-1}
+              onKeyDown={(e) => {
+                if (e.key === "Tab") {
+                  const focusableElements = Array.from(
+                    dialogRef.current?.querySelectorAll(
+                      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+                    ) || [],
+                  );
+
+                  if (focusableElements.length === 0) return;
+
+                  const firstElement = focusableElements[0] as HTMLElement;
+                  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                  if (e.shiftKey && document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                  } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                  }
+                }
+              }}
+              {...rest}
             >
-              <Flex fillWidth horizontal="between" gap="8">
-                {typeof title === "string" ? (
-                  <Heading id="dialog-title" variant="heading-strong-l">
-                    {title}
-                  </Heading>
-                ) : (
-                  title
+              <Column
+                as="header"
+                paddingX="24"
+                paddingTop="24"
+                paddingBottom="s"
+                gap="4"
+              >
+                <Flex fillWidth horizontal="between" gap="8">
+                  {typeof title === "string" ? (
+                    <Heading id={dialogTitleId} variant="heading-strong-l">
+                      {title}
+                    </Heading>
+                  ) : (
+                    <div id={dialogTitleId}>{title}</div>
+                  )}
+                  <IconButton
+                    icon="close"
+                    size="m"
+                    variant="tertiary"
+                    tooltip="Close"
+                    onClick={onClose}
+                  />
+                </Flex>
+                {description && (
+                  <Text variant="body-default-s" onBackground="neutral-weak">
+                    {description}
+                  </Text>
                 )}
-                <IconButton
-                  icon="close"
-                  size="m"
-                  variant="tertiary"
-                  tooltip="Close"
-                  onClick={onClose}
-                />
-              </Flex>
-              {description && (
-                <Text variant="body-default-s" onBackground="neutral-weak">
-                  {description}
-                </Text>
+              </Column>
+              <Column
+                as="section"
+                paddingX="24"
+                paddingBottom="24"
+                flex={1}
+                overflowY="auto"
+              >
+                {children}
+              </Column>
+              {footer && (
+                <Flex borderTop="neutral-medium" as="footer" horizontal="end" padding="12" gap="8">
+                  {footer}
+                </Flex>
               )}
             </Column>
-            <Column
-              as="section"
-              paddingX="24"
-              paddingBottom="24"
-              flex={1}
-              overflowY="auto"
-            >
-              {children}
-            </Column>
-            {footer && (
-              <Flex borderTop="neutral-medium" as="footer" horizontal="end" padding="12" gap="8">
-                {footer}
-              </Flex>
-            )}
-          </Column>
+          </Flex>
         </Flex>
-      </Flex>
       </>,
       document.body,
     );
@@ -376,5 +405,4 @@ const Dialog: React.FC<DialogProps> = forwardRef<HTMLDivElement, DialogProps>(
 );
 
 Dialog.displayName = "Dialog";
-
 export { Dialog };
