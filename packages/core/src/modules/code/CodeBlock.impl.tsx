@@ -1,8 +1,14 @@
 "use client";
 
-import React, { ReactNode, RefObject, useEffect, useRef, useState } from "react";
+import React, {
+  ReactNode,
+  RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import ReactDOM from "react-dom";
-import classNames from "classnames";
+import classNames from "clsx";
 import { SpacingToken } from "../../types";
 import styles from "./CodeBlock.module.scss";
 import {
@@ -14,7 +20,10 @@ import {
   ToggleButton,
   Column,
   Text,
+  Button,
+  Fade,
 } from "../../components";
+import { escapeHtml } from "../../utils/safe-html";
 
 let Prism: any;
 
@@ -164,21 +173,59 @@ const languageDependencies: Record<string, string[]> = {
 };
 
 // Track loaded languages to avoid re-loading
-const loadedLanguages = new Set<string>(["markup", "css", "clike", "javascript"]);
+const loadedLanguages = new Set<string>([
+  "markup",
+  "css",
+  "clike",
+  "javascript",
+]);
+
+// Language names that intentionally have no grammar — render as plain text
+// without attempting (and warn-failing) a Prism component import.
+const PLAIN_TEXT_LANGUAGES = new Set(["text", "plain", "plaintext", "none"]);
+
+// Short names surfaced by editors → Prism component file names. Prism ships
+// `prism-typescript`, `prism-markdown`, `prism-docker`, …; importing
+// `prism-md` or `prism-dockerfile` throws and the code silently renders
+// unhighlighted. `mdx` has no Prism grammar of its own — TSX is the closest.
+const languageAliases: Record<string, string> = {
+  ts: "typescript",
+  js: "javascript",
+  html: "markup",
+  xml: "markup",
+  svg: "markup",
+  md: "markdown",
+  mdx: "tsx",
+  dockerfile: "docker",
+  sh: "bash",
+  shell: "bash",
+  zsh: "bash",
+  yml: "yaml",
+};
+
+// Make the requested name resolvable at highlight time. Most Prism components
+// self-register their aliases (`markdown` registers `md`, `docker` registers
+// `dockerfile`), but names Prism doesn't know (`mdx`) only highlight if we
+// point them at the canonical grammar ourselves.
+const registerLanguageAlias = async (lang: string, actualLang: string) => {
+  if (lang === actualLang) return;
+  const prism = await getPrism();
+  if (!prism.languages[lang] && prism.languages[actualLang]) {
+    prism.languages[lang] = prism.languages[actualLang];
+  }
+};
 
 // Recursively load language dependencies
 const loadLanguageWithDependencies = async (lang: string): Promise<boolean> => {
   if (typeof window === "undefined") return false;
 
-  // Handle language aliases
-  const languageAliases: Record<string, string> = {
-    ts: "typescript",
-  };
-  
+  if (PLAIN_TEXT_LANGUAGES.has(lang)) return true;
+
   const actualLang = languageAliases[lang] || lang;
 
   // Skip if already loaded
   if (loadedLanguages.has(actualLang)) {
+    await registerLanguageAlias(lang, actualLang);
     return true;
   }
 
@@ -198,6 +245,7 @@ const loadLanguageWithDependencies = async (lang: string): Promise<boolean> => {
     await import(`prismjs/components/prism-${actualLang}`);
     loadedLanguages.add(actualLang);
     loadedLanguages.add(lang); // Also mark the alias as loaded
+    await registerLanguageAlias(lang, actualLang);
     return true;
   } catch (error) {
     console.warn(`✗ Failed to load Prism language '${lang}':`, error);
@@ -225,10 +273,14 @@ const loadPrismDependencies = async (...langs: string[]): Promise<boolean> => {
     ]);
 
     // Filter out empty/invalid languages and remove duplicates
-    const validLangs = [...new Set(langs.filter((lang) => lang && lang.trim()))];
+    const validLangs = [
+      ...new Set(langs.filter((lang) => lang && lang.trim())),
+    ];
 
     // Load each language with its dependencies
-    const results = await Promise.all(validLangs.map((lang) => loadLanguageWithDependencies(lang)));
+    const results = await Promise.all(
+      validLangs.map((lang) => loadLanguageWithDependencies(lang)),
+    );
 
     const successCount = results.filter(Boolean).length;
 
@@ -303,7 +355,9 @@ const parseDiff = (diffContent: string, startLineNumber?: number) => {
   return parsedLines;
 };
 
-const isInformationalLine = (type: "file-header" | "hunk" | "added" | "deleted" | "context") => {
+const isInformationalLine = (
+  type: "file-header" | "hunk" | "added" | "deleted" | "context",
+) => {
   return ["hunk", "file-header"].includes(type);
 };
 
@@ -317,11 +371,13 @@ const renderDiff = (
 ) => {
   const parsedLines = parseDiff(diffContent, startLineNumber);
 
-  const codeLines = parsedLines.filter((line) => !isInformationalLine(line.type));
+  const codeLines = parsedLines.filter(
+    (line) => !isInformationalLine(line.type),
+  );
 
   // Apply syntax highlighting to code lines
   let highlightedLines: string[] = [];
-  
+
   if (lang && prism.languages[lang]) {
     try {
       highlightedLines = codeLines.map((line) => {
@@ -330,18 +386,18 @@ const renderDiff = (
           if (prism.languages[lang]) {
             return prism.highlight(line.content, prism.languages[lang], lang);
           }
-          return line.content;
+          return escapeHtml(line.content);
         } catch (error) {
           console.warn(`Failed to highlight line: ${line.content}`, error);
-          return line.content;
+          return escapeHtml(line.content);
         }
       });
     } catch (error) {
       console.warn(`Failed to highlight code with language ${lang}:`, error);
-      highlightedLines = codeLines.map((line) => line.content);
+      highlightedLines = codeLines.map((line) => escapeHtml(line.content));
     }
   } else {
-    highlightedLines = codeLines.map((line) => line.content);
+    highlightedLines = codeLines.map((line) => escapeHtml(line.content));
   }
 
   let codeLineIndex = 0;
@@ -355,14 +411,24 @@ const renderDiff = (
         if (isInformationalLine(line.type)) {
           if (prism.languages.diff) {
             try {
-              content = prism.highlight(line.content, prism.languages.diff, "diff");
+              content = prism.highlight(
+                line.content,
+                prism.languages.diff,
+                "diff",
+              );
             } catch (error) {
-              console.warn(`Failed to highlight diff line: ${line.content}`, error);
+              console.warn(
+                `Failed to highlight diff line: ${line.content}`,
+                error,
+              );
+              content = escapeHtml(line.content);
             }
+          } else {
+            content = escapeHtml(line.content);
           }
           className = "language-diff";
         } else {
-          content = highlightedLines[codeLineIndex] || line.content;
+          content = highlightedLines[codeLineIndex] || escapeHtml(line.content);
           className = `language-${lang || "diff"}`;
           codeLineIndex++;
         }
@@ -371,11 +437,25 @@ const renderDiff = (
           <div key={index} className={`diff-row ${line.type}`}>
             <div className="diff-line-number">
               {(line.type === "deleted" || line.type === "context") &&
-                line.oldLineNumber !== undefined && <Text variant="code-default-s" style={{ transform: "scale(0.9)" }}>{line.oldLineNumber}</Text>}
+                line.oldLineNumber !== undefined && (
+                  <Text
+                    variant="code-default-s"
+                    style={{ transform: "scale(0.9)" }}
+                  >
+                    {line.oldLineNumber}
+                  </Text>
+                )}
             </div>
             <div className="diff-line-number">
               {(line.type === "added" || line.type === "context") &&
-                line.newLineNumber !== undefined && <Text variant="code-default-s" style={{ transform: "scale(0.9)" }}>{line.newLineNumber}</Text>}
+                line.newLineNumber !== undefined && (
+                  <Text
+                    variant="code-default-s"
+                    style={{ transform: "scale(0.9)" }}
+                  >
+                    {line.newLineNumber}
+                  </Text>
+                )}
             </div>
             <div className="diff-line-content">
               <span className="diff-sign"></span>
@@ -414,9 +494,13 @@ export interface CodeBlockProps extends React.ComponentProps<typeof Flex> {
   compact?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  background?: React.ComponentProps<typeof Flex>["background"];
   onInstanceChange?: (index: number) => void;
   lineNumbers?: boolean;
   highlight?: string;
+  maxLines?: number;
+  isCollapsible?: boolean;
+  hideCode?: boolean;
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
@@ -431,17 +515,23 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   reloadButton = false,
   fullscreenButton = false,
   lineNumbers = false,
+  maxLines = 5,
+  isCollapsible = false,
   compact = false,
+  hideCode = false,
   className,
   style,
+  background = "surface",
   onInstanceChange,
   ...rest
 }) => {
+  const styleBackgroundColor = style?.backgroundColor;
   const codeRef = useRef<HTMLElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const [selectedInstance, setSelectedInstance] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const codeBlockRef = useRef<HTMLDivElement>(null);
   const [prismInstance, setPrismInstance] = useState<any>(null);
 
@@ -450,9 +540,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     language: "",
   };
   const { code, language, startLineNumber } = codeInstance;
-  
+
   const highlight =
-    codeInstance.highlight !== undefined ? codeInstance.highlight : deprecatedHighlight;
+    codeInstance.highlight !== undefined
+      ? codeInstance.highlight
+      : deprecatedHighlight;
 
   useEffect(() => {
     const loadDependencies = async () => {
@@ -474,13 +566,22 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   useEffect(() => {
     if (prismInstance && codeRef.current && codes.length > 0) {
       const el = codeRef.current;
-      const rawCode = typeof code === "string" ? code : code?.content ?? "";
+      const rawCode = typeof code === "string" ? code : (code?.content ?? "");
       setTimeout(() => {
         el.textContent = rawCode;
         prismInstance.highlightElement(el);
       }, 0);
     }
-  }, [prismInstance, code, codes.length, selectedInstance, isFullscreen, isAnimating, language]);
+  }, [
+    prismInstance,
+    code,
+    codes.length,
+    selectedInstance,
+    isFullscreen,
+    isAnimating,
+    language,
+    isExpanded,
+  ]);
 
   useEffect(() => {
     if (isFullscreen) {
@@ -539,9 +640,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
               ) {
                 const textContent = codeContent.textContent || "";
                 try {
-                  codeContent.innerHTML = Prism.highlight(textContent, Prism.languages[lang], lang);
+                  codeContent.innerHTML = Prism.highlight(
+                    textContent,
+                    Prism.languages[lang],
+                    lang,
+                  );
                 } catch (error) {
                   console.warn("Failed to re-highlight line:", error);
+                  codeContent.textContent = textContent;
                 }
               }
             });
@@ -577,7 +683,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   };
 
   const handleContent = (selectedLabel: string) => {
-    const index = codes.findIndex((instance) => instance.label === selectedLabel);
+    const index = codes.findIndex(
+      (instance) => instance.label === selectedLabel,
+    );
     if (index !== -1) {
       setSelectedInstance(index);
     }
@@ -600,12 +708,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const renderCodeBlock = (inPortal = false, resetMargin = false) => (
     <Column
       ref={inPortal ? undefined : codeBlockRef}
-      radius="l"
-      background="surface"
+      background={background ?? "surface"}
       border="neutral-alpha-weak"
       overflow="hidden"
       vertical="center"
       fillWidth
+      radius="m"
       minHeight={2.5}
       className={classNames(className, {
         [styles.fullscreen]: inPortal && isFullscreen,
@@ -629,10 +737,25 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       {...rest}
     >
       {!compact && (
-        <Row zIndex={2} position="static" fillWidth fitHeight horizontal="between">
+        <Row
+          zIndex={2}
+          position="static"
+          fillWidth
+          fitHeight
+          horizontal="between"
+          background={background}
+          style={{ backgroundColor: styleBackgroundColor }}
+        >
           {codes.length > 1 ? (
-            <Scroller paddingX="8" fadeColor="surface">
-              <Row data-scaling="90" fitWidth fillHeight vertical="center" paddingY="4" gap="2">
+            <Scroller paddingX="8">
+              <Row
+                data-scaling="90"
+                fitWidth
+                fillHeight
+                vertical="center"
+                paddingY="4"
+                gap="2"
+              >
                 {codes.map((instance, index) => (
                   <ToggleButton
                     key={index}
@@ -646,7 +769,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     }}
                   >
                     <Text
-                      onBackground={selectedInstance === index ? "neutral-strong" : "neutral-weak"}
+                      onBackground={
+                        selectedInstance === index
+                          ? "neutral-strong"
+                          : "neutral-weak"
+                      }
                     >
                       {instance.label}
                     </Text>
@@ -667,39 +794,54 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           {!compact && (
             <Row paddingY="4" paddingX="8" gap="2" position="static">
               {reloadButton && (
-                <IconButton
-                  size="m"
-                  tooltip="Reload"
-                  tooltipPosition="bottom"
-                  variant="tertiary"
-                  onClick={handleRefresh}
-                  icon="refresh"
-                />
+                <Flex fit radius="s" background={background} style={{ backgroundColor: styleBackgroundColor }}>
+                  <IconButton
+                    size="m"
+                    tooltip="Reload"
+                    tooltipPosition="bottom"
+                    color="neutral-weak"
+                    variant="tertiary"
+                    onClick={handleRefresh}
+                    icon="refresh"
+                  />
+                </Flex>
               )}
               {fullscreenButton && (
-                <IconButton
-                  size="m"
-                  tooltip={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                  tooltipPosition="bottom"
-                  variant="tertiary"
-                  icon={isFullscreen ? "minimize" : "maximize"}
-                  onClick={toggleFullscreen}
-                />
+                <Flex fit radius="s" background={background} style={{ backgroundColor: styleBackgroundColor }}>
+                  <IconButton
+                    size="m"
+                    color="neutral-weak"
+                    tooltip={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                    tooltipPosition="bottom"
+                    variant="tertiary"
+                    icon={isFullscreen ? "minimize" : "maximize"}
+                    onClick={toggleFullscreen}
+                  />
+                </Flex>
               )}
               {styleButton && (
                 <StyleOverlay>
-                  <IconButton variant="tertiary" icon="sparkle" />
+                  <Flex fit radius="s" background={background} style={{ backgroundColor: styleBackgroundColor }}>
+                    <IconButton
+                      variant="tertiary"
+                      icon="sparkle"
+                      color="neutral-weak"
+                    />
+                  </Flex>
                 </StyleOverlay>
               )}
               {copyButton && (
-                <IconButton
-                  size="m"
-                  tooltip="Copy"
-                  tooltipPosition="bottom"
-                  variant="tertiary"
-                  onClick={handleCopy}
-                  icon={copyIcon}
-                />
+                <Flex fit radius="s" background={background} style={{ backgroundColor: styleBackgroundColor }}>
+                  <IconButton
+                    size="m"
+                    tooltip="Copy"
+                    tooltipPosition="bottom"
+                    color="neutral-weak"
+                    variant="tertiary"
+                    onClick={handleCopy}
+                    icon={copyIcon}
+                  />
+                </Flex>
               )}
             </Row>
           )}
@@ -724,12 +866,14 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             overflowY="auto"
           >
             {Array.isArray(preview)
-              ? preview.map((item, index) => <React.Fragment key={index}>{item}</React.Fragment>)
+              ? preview.map((item, index) => (
+                  <React.Fragment key={index}>{item}</React.Fragment>
+                ))
               : preview}
           </Row>
         </Row>
       )}
-      {codes.length > 0 && code && (
+      {codes.length > 0 && code && !hideCode && (
         <Row
           border={!compact && !preview ? "neutral-alpha-weak" : undefined}
           fillHeight={fillHeight}
@@ -743,69 +887,136 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             width: "calc(100% + 2px)",
           }}
         >
-          <Row overflowX="auto" fillWidth tabIndex={-1}>
-            {language.includes("diff") ? (
-              <div
-                className={classNames(
-                  styles.pre,
-                  `language-diff`,
-                )}
-                style={{ maxHeight: `${codeHeight}rem`, overflow: "auto", width: "100%" }}
+          {((lines) => {
+            const isCollapsed =
+              isCollapsible && maxLines > 0 && lines > maxLines && !isExpanded;
+            const collapsedMaxHeight = `calc(1.75em * ${maxLines} + 1rem)`;
+
+            return (
+              <Column
+                fillWidth
+                position="relative"
+                style={
+                  isCollapsed
+                    ? { maxHeight: collapsedMaxHeight, overflow: "hidden" }
+                    : undefined
+                }
               >
-                {prismInstance && renderDiff(
-                  typeof code === "string" ? code : code.content,
-                  startLineNumber,
-                  codeRef,
-                  Array.isArray(language) ? language[1] : undefined,
-                  prismInstance,
+                <Row overflowX="auto" fillWidth tabIndex={-1}>
+                  {language.includes("diff") ? (
+                    <div
+                      className={classNames(styles.pre, `language-diff`)}
+                      style={{
+                        maxHeight: `${codeHeight}rem`,
+                        overflow: "auto",
+                        width: "100%",
+                      }}
+                    >
+                      {prismInstance &&
+                        renderDiff(
+                          typeof code === "string" ? code : code.content,
+                          startLineNumber,
+                          codeRef,
+                          Array.isArray(language) ? language[1] : undefined,
+                          prismInstance,
+                        )}
+                    </div>
+                  ) : (
+                    <pre
+                      key={`${selectedInstance}-${highlight || deprecatedHighlight || "no-highlight"}`}
+                      suppressHydrationWarning
+                      tabIndex={-1}
+                      style={{ maxHeight: `${codeHeight}rem` }}
+                      data-line={highlight || deprecatedHighlight}
+                      ref={preRef}
+                      className={classNames(
+                        lineNumbers ? styles.lineNumberPadding : styles.padding,
+                        styles.pre,
+                        `language-${language}`,
+                        {
+                          "line-numbers": lineNumbers,
+                        },
+                      )}
+                    >
+                      <code
+                        tabIndex={-1}
+                        ref={codeRef}
+                        className={classNames(
+                          styles.code,
+                          `language-${language}`,
+                        )}
+                      >
+                        {typeof code === "string" ? code : code.content}
+                      </code>
+                    </pre>
+                  )}
+                </Row>
+                {isCollapsed && (
+                  <>
+                    <Fade
+                      position="absolute"
+                      bottom="0"
+                      left="0"
+                      right="0"
+                      zIndex={1}
+                      base="page"
+                      to="top"
+                      height={"100%"}
+                      blur={100}
+                    />
+                    <Flex
+                      position="absolute"
+                      top="0"
+                      left="0"
+                      right="0"
+                      bottom="0"
+                      zIndex={2}
+                      vertical="center"
+                      horizontal="center"
+                      pointerEvents="none"
+                      background="transparent"
+                    >
+                      <Flex radius="m" fit pointerEvents="auto">
+                        <Button
+                          variant="subtle"
+                          weight="default"
+                          size="s"
+                          onClick={() => setIsExpanded(true)}
+                        >
+                          View code
+                        </Button>
+                      </Flex>
+                    </Flex>
+                  </>
                 )}
-              </div>
-            ) : (
-              <pre
-                key={`${selectedInstance}-${highlight || deprecatedHighlight || "no-highlight"}`}
-                suppressHydrationWarning
-                tabIndex={-1}
-                style={{ maxHeight: `${codeHeight}rem` }}
-                data-line={highlight || deprecatedHighlight}
-                ref={preRef}
-                className={classNames(
-                  lineNumbers ? styles.lineNumberPadding : styles.padding,
-                  styles.pre,
-                  `language-${language}`,
-                  {
-                    "line-numbers": lineNumbers,
-                  },
-                )}
-              >
-                <code
-                  tabIndex={-1}
-                  ref={codeRef}
-                  className={classNames(styles.code, `language-${language}`)}
-                >
-                  {typeof code === "string" ? code : code.content}
-                </code>
-              </pre>
-            )}
-          </Row>
+              </Column>
+            );
+          })(
+            (typeof code === "string" ? code : code.content).split("\n").length,
+          )}
           {compact && copyButton && (
-            <Row
+            <Flex
               position="absolute"
               right="4"
               top="4"
               marginRight="2"
               className={styles.compactCopy}
               zIndex={1}
+              radius="s"
+              background={background}
+              style={{ backgroundColor: styleBackgroundColor }}
             >
               <IconButton
                 tooltip="Copy"
                 tooltipPosition="left"
+                color="neutral-weak"
                 aria-label="Copy code"
                 onClick={handleCopy}
                 icon={copyIcon}
                 size="m"
                 variant="tertiary"
               />
-            </Row>
+            </Flex>
           )}
         </Row>
       )}

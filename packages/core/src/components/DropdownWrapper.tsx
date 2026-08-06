@@ -25,6 +25,7 @@ import {
 import { Flex, Dropdown, Column, Row, FocusTrap, ArrowNavigation, ScrollLock } from ".";
 import styles from "./DropdownWrapper.module.scss";
 import { NavigationLayout } from "../hooks/useArrowNavigation";
+import { getLastOpenedDropdown, setLastOpenedDropdown, clearLastOpenedDropdown } from "../utils";
 
 export interface DropdownWrapperProps {
   fillWidth?: boolean;
@@ -98,7 +99,7 @@ const DropdownWrapper = forwardRef<HTMLDivElement, DropdownWrapperProps>(
       (newIsOpen: boolean) => {
         if (newIsOpen) {
           // Close any other open dropdown before opening this one
-          if ((window as any).lastOpenedDropdown && (window as any).lastOpenedDropdown !== dropdownId.current) {
+          if (getLastOpenedDropdown() && getLastOpenedDropdown() !== dropdownId.current) {
             // Dispatch event to close other dropdowns
             const closeEvent = new CustomEvent('close-other-dropdowns', {
               detail: { exceptId: dropdownId.current }
@@ -110,18 +111,17 @@ const DropdownWrapper = forwardRef<HTMLDivElement, DropdownWrapperProps>(
               if (!isControlled) {
                 setInternalIsOpen(true);
               }
-              (window as any).lastOpenedDropdown = dropdownId.current;
+              setLastOpenedDropdown(dropdownId.current);
               onOpenChange?.(true);
             }, 50);
             return;
           }
           
-          // Set this as the last opened dropdown using global variable
-          (window as any).lastOpenedDropdown = dropdownId.current;
+          setLastOpenedDropdown(dropdownId.current);
         } else {
           // Clear the last opened dropdown if this one is closing
-          if ((window as any).lastOpenedDropdown === dropdownId.current) {
-            (window as any).lastOpenedDropdown = null;
+          if (getLastOpenedDropdown() === dropdownId.current) {
+            clearLastOpenedDropdown();
           }
         }
 
@@ -151,25 +151,26 @@ const DropdownWrapper = forwardRef<HTMLDivElement, DropdownWrapperProps>(
       open: isOpen,
       middleware: [
         offset(4),
-        minHeight ? undefined : flip(),
+        flip(),
         shift(),
         size({
           apply({ availableWidth, availableHeight, elements }) {
-            // Get the width directly from the trigger element when needed
-            let width = "auto";
+            const floatingStyle = elements.floating.style;
 
             if (fillWidth && triggerRef.current) {
               const triggerWidth = triggerRef.current.getBoundingClientRect().width;
-              width = `${Math.max(triggerWidth, 200)}px`;
+              const w = `${Math.max(triggerWidth, 200)}px`;
+              floatingStyle.width = w;
+              floatingStyle.minWidth = minWidth ? `${minWidth}rem` : w;
+            } else {
+              // Let content determine width; only apply an explicit minWidth
+              floatingStyle.width = "";
+              floatingStyle.minWidth = minWidth ? `${minWidth}rem` : "";
             }
 
-            Object.assign(elements.floating.style, {
-              width: width,
-              minWidth: minWidth ? `${minWidth}rem` : fillWidth ? width : undefined,
-              maxWidth: maxWidth ? `${maxWidth}rem` : `${availableWidth}px`,
-              minHeight: `${Math.min(minHeight || 0)}px`,
-              maxHeight: `${availableHeight}px`,
-            });
+            floatingStyle.maxWidth = maxWidth ? `${maxWidth}rem` : `${availableWidth}px`;
+            floatingStyle.minHeight = `${Math.min(minHeight || 0)}px`;
+            floatingStyle.maxHeight = `${availableHeight}px`;
           },
         }),
       ],
@@ -613,7 +614,7 @@ const DropdownWrapper = forwardRef<HTMLDivElement, DropdownWrapperProps>(
                   itemSelector='.option, [role="option"], [data-value]'
                   role={navigationLayout === "grid" ? "grid" : "listbox"}
                   aria-label="Dropdown options"
-                  disabled={(window as any).lastOpenedDropdown !== dropdownId.current}
+                  disabled={getLastOpenedDropdown() !== dropdownId.current}
                 >
                   <Flex
                     zIndex={9}
@@ -628,7 +629,7 @@ const DropdownWrapper = forwardRef<HTMLDivElement, DropdownWrapperProps>(
                     data-role="dropdown-portal"
                     data-is-dropdown="true"
                     data-dropdown-id={dropdownId.current}
-                    data-is-active={(window as any).lastOpenedDropdown === dropdownId.current}
+                    data-is-active={getLastOpenedDropdown() === dropdownId.current}
                     onKeyDown={(e) => {
                       // If handleArrowNavigation is false, let all keyboard events pass through
                       if (!handleArrowNavigation) {
@@ -729,7 +730,7 @@ const DropdownWrapper = forwardRef<HTMLDivElement, DropdownWrapperProps>(
                   data-role="dropdown-portal"
                   data-is-dropdown="true"
                   data-dropdown-id={dropdownId.current}
-                  data-is-active={(window as any).lastOpenedDropdown === dropdownId.current}
+                  data-is-active={getLastOpenedDropdown() === dropdownId.current}
                   onKeyDown={(e) => {
                     // If handleArrowNavigation is false, let all keyboard events pass through
                     if (!handleArrowNavigation) {

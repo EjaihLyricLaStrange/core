@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import frontMatter from 'front-matter';
 import { Schemes } from '@once-ui-system/core';
 
 interface NavigationItem {
@@ -15,6 +15,7 @@ interface NavigationItem {
     children?: NavigationItem[];
     order?: number;
     pro?: boolean;
+    updatedAt?: string;
 }
 
 interface MetaData {
@@ -111,7 +112,7 @@ export default function getNavigation(dirPath = path.join(process.cwd(), 'src/co
       return item;
     } else if (entry.isFile() && entry.name.endsWith('.mdx')) {
       const fileContents = fs.readFileSync(fullPath, 'utf8');
-      const { data } = matter(fileContents);
+      const { attributes } = frontMatter(fileContents) as { attributes: Record<string, any> };
       
       const filenameNoExt = entry.name.replace(/\.mdx$/, '');
       
@@ -130,13 +131,14 @@ export default function getNavigation(dirPath = path.join(process.cwd(), 'src/co
 
       const item = {
         slug: normalizedPath,
-        title: data.title || entry.name.replace(/\.mdx?$/, ''),
-        navTag: data.navTag,
-        navLabel: data.navLabel,
-        navIcon: data.navIcon,
-        navTagVariant: data.navTagVariant,
-        keywords: data.keywords,
-        order: pageOrder !== undefined ? pageOrder : data.order,
+        title: attributes.title || entry.name.replace(/\.mdx?$/, ''),
+        navTag: attributes.navTag,
+        navLabel: attributes.navLabel,
+        navIcon: attributes.navIcon,
+        navTagVariant: attributes.navTagVariant,
+        keywords: attributes.keywords,
+        order: pageOrder !== undefined ? pageOrder : attributes.order,
+        updatedAt: attributes.updatedAt,
       };
       
       return item;

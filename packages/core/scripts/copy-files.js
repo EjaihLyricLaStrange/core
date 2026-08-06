@@ -65,12 +65,39 @@ Object.keys(peerDeps).forEach((dep) => {
 // Write the modified package.json to dist
 fs.writeFileSync(path.resolve(destDir, "package.json"), JSON.stringify(packageJson, null, 2));
 
-// Copy README
+// Copy README and AGENTS.md
 if (fs.existsSync(path.resolve(__dirname, "../README.md"))) {
   fs.copyFileSync(path.resolve(__dirname, "../README.md"), path.resolve(destDir, "README.md"));
+}
+if (fs.existsSync(path.resolve(__dirname, "../AGENTS.md"))) {
+  fs.copyFileSync(path.resolve(__dirname, "../AGENTS.md"), path.resolve(destDir, "AGENTS.md"));
+}
+
+// Copy CLI scripts and agent templates for npm publish
+const scriptsDir = path.resolve(destDir, "scripts");
+fs.mkdirSync(scriptsDir, { recursive: true });
+for (const script of ["init-agent.js", "validate-ai-code.js"]) {
+  fs.copyFileSync(
+    path.resolve(__dirname, script),
+    path.join(scriptsDir, script),
+  );
+}
+const agentSrc = path.resolve(__dirname, "../agent");
+const agentDest = path.resolve(destDir, "agent");
+if (fs.existsSync(agentSrc)) {
+  copyDir(agentSrc, agentDest);
 }
 
 // Copy style files
 console.log("Copying style files and other assets...");
 copyDir(srcDir, destDir);
+
+// Copy AI harness artifacts for npm publish
+const aiDir = path.resolve(__dirname, "../ai");
+const aiDest = path.resolve(destDir, "ai");
+if (fs.existsSync(aiDir)) {
+  console.log("Copying AI artifacts...");
+  copyDir(aiDir, aiDest);
+}
+
 console.log("Files copied successfully!");

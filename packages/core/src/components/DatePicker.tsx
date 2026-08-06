@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, forwardRef, useEffect, useCallback } from "react";
-import classNames from "classnames";
+import classNames from "clsx";
 import {
   Flex,
   Text,
@@ -18,6 +18,8 @@ import {
   Row,
   ArrowNavigation,
 } from ".";
+import { CondensedTShirtSizes } from "../types";
+import { getLastOpenedDropdown, setLastOpenedDropdown, clearLastOpenedDropdown } from "../utils";
 import styles from "./DatePicker.module.scss";
 
 export interface DatePickerProps extends Omit<React.ComponentProps<typeof Flex>, "onChange"> {
@@ -33,7 +35,7 @@ export interface DatePickerProps extends Omit<React.ComponentProps<typeof Flex>,
     hours: number;
     minutes: number;
   };
-  size?: "s" | "m" | "l";
+  size?: CondensedTShirtSizes;
   isNested?: boolean;
   className?: string;
   style?: React.CSSProperties;
@@ -314,8 +316,8 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
 
     const generateYearOptions = () => {
       const currentYearNum = new Date().getFullYear();
-      const minYear = minDate ? minDate.getFullYear() : currentYearNum - 10;
-      const maxYear = maxDate ? maxDate.getFullYear() : currentYearNum + 10;
+      const minYear = minDate ? minDate.getFullYear() : currentYearNum - 25;
+      const maxYear = maxDate ? maxDate.getFullYear() : currentYearNum + 25;
 
       const years = [];
       for (let i = minYear; i <= maxYear; i++) {
@@ -570,7 +572,7 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
 
     return (
       <Column
-        onClick={(event: any) => {
+        onClick={(event: React.MouseEvent) => {
           event.preventDefault();
           event.stopPropagation();
 
@@ -623,7 +625,7 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                   variant="tertiary"
                   size={size}
                   icon="chevronLeft"
-                  onClick={(event: any) => {
+                  onClick={(event: React.MouseEvent) => {
                     event.preventDefault();
                     event.stopPropagation();
                     handleMonthChange(-1);
@@ -642,19 +644,18 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                       // Update global tracking for keyboard navigation
                       if (open) {
                         // Set this as the last opened dropdown
-                        (window as any).lastOpenedDropdown = "month-dropdown";
-                      } else if ((window as any).lastOpenedDropdown === "month-dropdown") {
-                        (window as any).lastOpenedDropdown = null;
+                        setLastOpenedDropdown("month-dropdown");
+                      } else if (getLastOpenedDropdown() === "month-dropdown") {
+                        clearLastOpenedDropdown();
                       }
                     }}
                     trigger={
                       <Button
-                        onClick={(event: any) => {
+                        onClick={(event: React.MouseEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
                           setIsMonthOpen(true);
-                          // Update global tracking
-                          (window as any).lastOpenedDropdown = "month-dropdown";
+                           setLastOpenedDropdown("month-dropdown");
                         }}
                         variant="secondary"
                         size="s"
@@ -670,7 +671,7 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                         fillWidth
                         gap="2"
                         padding="4"
-                        onClick={(event: any) => {
+                        onClick={(event: React.MouseEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
                         }}
@@ -692,8 +693,7 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                                 if (!monthDisabled) {
                                   handleMonthSelect(index);
                                   setIsMonthOpen(false);
-                                  // Clear global tracking
-                                  (window as any).lastOpenedDropdown = null;
+                                  clearLastOpenedDropdown();
                                 }
                               }}
                             />
@@ -705,9 +705,6 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                   />
 
                   <DropdownWrapper
-                    navigationLayout="grid"
-                    optionsCount={generateYearOptions().length}
-                    columns={generateYearOptions().length < 6 ? 1 : 6}
                     isNested={isNested}
                     isOpen={isYearOpen}
                     dropdownId="year-dropdown"
@@ -715,10 +712,9 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                       setIsYearOpen(open);
                       // Update global tracking for keyboard navigation
                       if (open) {
-                        // Set this as the last opened dropdown
-                        (window as any).lastOpenedDropdown = "year-dropdown";
-                      } else if ((window as any).lastOpenedDropdown === "year-dropdown") {
-                        (window as any).lastOpenedDropdown = null;
+                        setLastOpenedDropdown("year-dropdown");
+                      } else if (getLastOpenedDropdown() === "year-dropdown") {
+                        clearLastOpenedDropdown();
                       }
                     }}
                     placement="bottom-start"
@@ -726,12 +722,11 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                       <Button
                         variant="secondary"
                         size="s"
-                        onClick={(event: any) => {
+                        onClick={(event: React.MouseEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
                           setIsYearOpen(true);
-                          // Update global tracking
-                          (window as any).lastOpenedDropdown = "year-dropdown";
+                          setLastOpenedDropdown("year-dropdown");
                         }}
                       >
                         <Row vertical="center" gap="4">
@@ -741,11 +736,13 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                       </Button>
                     }
                     dropdown={
-                      <Grid
-                        columns={generateYearOptions().length < 6 ? "1" : 6}
-                        gap="2"
+                      <Column
+                        fillWidth
                         padding="4"
-                        onClick={(event: any) => {
+                        gap="2"
+                        overflowY="auto"
+                        style={{ maxHeight: "16rem" }}
+                        onClick={(event: React.MouseEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
                         }}
@@ -771,14 +768,13 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                                 if (!allMonthsDisabled) {
                                   handleYearSelect(year);
                                   setIsYearOpen(false);
-                                  // Clear global tracking
-                                  (window as any).lastOpenedDropdown = null;
+                                  clearLastOpenedDropdown();
                                 }
                               }}
                             />
                           );
                         })}
-                      </Grid>
+                      </Column>
                     }
                     data-dropdown-id="year-dropdown"
                   />
@@ -794,7 +790,7 @@ const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(
                   variant="tertiary"
                   size={size}
                   icon="chevronRight"
-                  onClick={(event: any) => {
+                  onClick={(event: React.MouseEvent) => {
                     event.preventDefault();
                     event.stopPropagation();
                     handleMonthChange(1);

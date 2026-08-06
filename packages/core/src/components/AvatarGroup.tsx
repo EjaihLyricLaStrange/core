@@ -4,11 +4,12 @@ import React, { forwardRef } from "react";
 
 import { Avatar, AvatarProps, Flex } from ".";
 import styles from "./AvatarGroup.module.scss";
-import classNames from "classnames";
+import classNames from "clsx";
+import { TShirtSizes } from "../types";
 
 interface AvatarGroupProps extends React.ComponentProps<typeof Flex> {
   avatars: AvatarProps[];
-  size?: "xs" | "s" | "m" | "l" | "xl";
+  size?: TShirtSizes;
   reverse?: boolean;
   limit?: number;
   className?: string;

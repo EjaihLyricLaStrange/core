@@ -4,11 +4,14 @@ import React, { useState } from "react";
 import { 
   Button, 
   Dialog,
+  DialogProvider,
   Text,
   Row,
   Feedback,
   Column,
+  Heading,
   Input,
+  Media,
 } from "@once-ui-system/core";
 
 export function BasicDialog() {
@@ -69,7 +72,7 @@ export function StackedDialogs() {
   const [isStackedOpen, setIsStackedOpen] = useState(false);
   
   return (
-    <>
+    <DialogProvider>
       <Button variant="secondary" onClick={() => setIsBaseOpen(true)}>Open stacked dialogs</Button>
       
       <Dialog
@@ -103,6 +106,38 @@ export function StackedDialogs() {
           Notice how the base dialog is dimmed in the background.
         </Text>
       </Dialog>
+    </DialogProvider>
+  );
+}
+
+export function DialogFlush() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setIsOpen(true)}>Flush dialog</Button>
+      <Dialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        flush
+        hideClose
+        maxWidth={32}
+        title=""
+        description=""
+      >
+        <Media
+          src="/images/cover.jpg"
+          alt="Cover"
+          maxWidth="100%"
+          aspectRatio="16/9"
+        />
+        <Column padding="l" fillWidth gap="12">
+          <Heading variant="heading-strong-s">Flush dialog</Heading>
+          <Text variant="body-default-s" onBackground="neutral-weak">
+            Header removed. Content is flush to the edges.
+          </Text>
+        </Column>
+      </Dialog>
     </>
   );
 }
@@ -129,6 +164,29 @@ export function CustomizedDialog() {
           <Text onBackground="danger-weak">Custom content can be added inside the dialog body.</Text>
           <Button variant="danger" onClick={() => setIsOpen(false)}>Close</Button>
         </Column>
+      </Dialog>
+    </>
+  );
+}
+
+export function DialogCloseOnClickaway() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setIsOpen(true)}>
+        Dialog without clickaway
+      </Button>
+      <Dialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Confirm action"
+        closeOnClickaway={false}
+        footer={
+          <Button onClick={() => setIsOpen(false)}>Close</Button>
+        }
+      >
+        <Text>Clicking outside will not dismiss this dialog.</Text>
       </Dialog>
     </>
   );

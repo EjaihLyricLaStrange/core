@@ -20,18 +20,18 @@ export type StaticSpacingToken =
 
 export const schemes = [
   "blue",
-  "aqua",
+  "indigo",
+  "violet",
   "magenta",
   "pink",
-  "yellow",
-  "orange",
   "red",
+  "orange",
+  "yellow",
   "moss",
   "green",
   "emerald",
+  "aqua",
   "cyan",
-  "violet",
-  "indigo",
 ];
 
 export type Schemes =
@@ -66,7 +66,7 @@ export type CSSUnit =
   | `${number}vw`
   | `calc(${string})`;
 
-export type opacity = 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
+export type Opacity = 0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100;
 
 export type ColorScheme =
   | "neutral"
@@ -89,13 +89,13 @@ export type RadiusNest = "4" | "8";
 
 export type TextType = "body" | "heading" | "display" | "label" | "code";
 
-export type TextWeight = "default" | "strong";
+export type TextWeight = "default" | "normal" | "medium" | "strong";
 
 export type TextSize = TShirtSizes;
 
 export type TextVariant = `${TextType}-${TextWeight}-${TextSize}`;
 
-export type gridSize =
+export type GridSize =
   | "1"
   | "2"
   | "3"
@@ -121,7 +121,7 @@ export type gridSize =
   | 11
   | 12;
 
-export type flex =
+export type FlexValue =
   | "0"
   | "1"
   | "2"

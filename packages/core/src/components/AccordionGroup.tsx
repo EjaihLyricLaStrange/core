@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, forwardRef } from "react";
 import { Column, Accordion, Line, Flex } from ".";
+import { CondensedTShirtSizes } from "../types";
 
 export type AccordionItem = {
   title: React.ReactNode;
@@ -10,20 +11,20 @@ export type AccordionItem = {
 
 export interface AccordionGroupProps extends React.ComponentProps<typeof Flex> {
   items: AccordionItem[];
-  size?: "s" | "m" | "l";
+  size?: CondensedTShirtSizes;
   autoCollapse?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
 
-const AccordionGroup: React.FC<AccordionGroupProps> = ({
+const AccordionGroup = forwardRef<HTMLDivElement, AccordionGroupProps>(({
   items,
   size = "m",
   style,
   className,
   autoCollapse = true,
   ...rest
-}) => {
+}, ref) => {
   const [openAccordion, setOpenAccordion] = useState<number | null>(null);
 
   const handleAccordionToggle = useCallback(
@@ -56,22 +57,39 @@ const AccordionGroup: React.FC<AccordionGroupProps> = ({
       className={className || ""}
       {...rest}
     >
-      {items.map((item, index) => (
-        <React.Fragment key={index}>
-          <Accordion
-            title={item.title}
-            size={size}
-            open={autoCollapse ? openAccordion === index : undefined}
-            onToggle={() => handleAccordionToggle(index)}
-          >
-            {item.content}
-          </Accordion>
-          {index < items.length - 1 && <Line background="neutral-alpha-medium" />}
-        </React.Fragment>
-      ))}
+      {items.map((item, index) => {
+        const isFirst = index === 0;
+        const isLast = index === items.length - 1;
+
+        let radiusStyle: React.CSSProperties | undefined;
+        if (items.length > 1) {
+          if (isFirst) {
+            radiusStyle = { borderRadius: "var(--radius-m) var(--radius-m) 0 0" };
+          } else if (isLast) {
+            radiusStyle = { borderRadius: "0 0 var(--radius-m) var(--radius-m)" };
+          } else {
+            radiusStyle = { borderRadius: 0 };
+          }
+        }
+
+        return (
+          <React.Fragment key={index}>
+            <Accordion
+              title={item.title}
+              size={size}
+              open={autoCollapse ? openAccordion === index : undefined}
+              onToggle={() => handleAccordionToggle(index)}
+              headerProps={radiusStyle ? { style: radiusStyle } : undefined}
+            >
+              {item.content}
+            </Accordion>
+            {!isLast && <Line background="neutral-alpha-medium" />}
+          </React.Fragment>
+        );
+      })}
     </Column>
   );
-};
+})
 
 AccordionGroup.displayName = "AccordionGroup";
 export { AccordionGroup };

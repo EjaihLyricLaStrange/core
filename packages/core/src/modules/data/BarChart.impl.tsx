@@ -13,13 +13,13 @@ import {
   ChartVariant,
   ChartStatus,
   ChartHeader,
-  barWidth,
+  BarWidth,
 } from ".";
 import { useDataTheme } from "../../contexts/DataThemeProvider";
 import { RadiusSize } from "@/types";
 
 export interface BarChartProps extends ChartProps {
-  barWidth?: barWidth;
+  barWidth?: BarWidth;
   hover?: boolean;
   reverseY?: boolean;
   reverseX?: boolean;
@@ -218,7 +218,7 @@ const BarChart: React.FC<BarChartProps> = ({
         onDateRangeChange={handleDateRangeChange}
         presets={date?.presets}
       />
-      <Row fill borderTop={(title || description || date?.selector) ? (border || "neutral-alpha-weak") : undefined} topRadius={flex.radius as RadiusSize || "l"} overflow="hidden">
+      <Row fill borderTop={(title || description || date?.selector) ? (border || "neutral-alpha-weak") : undefined} topRadius={flex.radius as RadiusSize || "l"} overflow="hidden" style={{ minHeight: height ? `${height}rem` : undefined }}>
         <ChartStatus
           loading={loading}
           empty={!filteredData || filteredData.length === 0}

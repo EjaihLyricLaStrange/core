@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState, forwardRef } from "react";
 import { IconButton, Icon, Flex, Row } from ".";
-import classNames from "classnames";
+import classNames from "clsx";
 import styles from "./Toast.module.scss";
 import { IconName } from "../icons";
 
 interface ToastProps {
   className?: string;
-  variant: "success" | "danger";
+  variant: "success" | "danger" | "warning" | "info";
   icon?: boolean;
   onClose?: () => void;
   action?: React.ReactNode;
@@ -18,6 +18,8 @@ interface ToastProps {
 const iconMap: { [key in ToastProps["variant"]]: IconName } = {
   success: "check",
   danger: "danger",
+  warning: "warning",
+  info: "info",
 };
 
 const Toast = forwardRef<HTMLDivElement, ToastProps>(

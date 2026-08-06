@@ -1,7 +1,7 @@
 "use client";
 
-import { Flex, Media, Column, Row, IconButton } from ".";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Flex, Media, Column, Row, IconButton, Fade } from ".";
+import { useEffect, useState, useRef, useCallback, forwardRef } from "react";
 import styles from "./Swiper.module.scss";
 
 interface SwiperItem {
@@ -16,10 +16,11 @@ interface SwiperProps extends React.ComponentProps<typeof Flex> {
   fill?: boolean;
   aspectRatio?: string;
   sizes?: string;
+  unoptimized?: boolean;
   indicator?: boolean;
 }
 
-const Swiper: React.FC<SwiperProps> = ({
+const Swiper = forwardRef<HTMLDivElement, SwiperProps>(({
   items = [],
   fill = false,
   controls = true,
@@ -27,8 +28,9 @@ const Swiper: React.FC<SwiperProps> = ({
   indicator = true,
   aspectRatio = "16 / 9",
   sizes,
+  unoptimized = false,
   ...rest
-}) => {
+}, ref) => {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [isDragging, setIsDragging] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -181,7 +183,7 @@ const Swiper: React.FC<SwiperProps> = ({
   }
 
   return (
-    <Column fillWidth fillHeight={fill} aspectRatio={undefined} style={{ isolation: "isolate" }} {...rest}>
+    <Column ref={ref} fillWidth fillHeight={fill} aspectRatio={undefined} style={{ isolation: "isolate" }} {...rest}>
       <Flex
         fillWidth
         fillHeight={fill}
@@ -195,6 +197,7 @@ const Swiper: React.FC<SwiperProps> = ({
           radius={rest.radius || "l"}
           border={rest.border || "neutral-alpha-weak"}
           overflow="hidden"
+          position="relative"
         >
           {/* Scroll Container */}
           <Row
@@ -232,6 +235,7 @@ const Swiper: React.FC<SwiperProps> = ({
                 <Media
                   fill={fill}
                   sizes={sizes}
+                  unoptimized={unoptimized}
                   priority={priority && index === 0}
                   aspectRatio={fill ? undefined : aspectRatio === "auto" ? undefined : aspectRatio}
                   src={item.slide as string}
@@ -256,52 +260,78 @@ const Swiper: React.FC<SwiperProps> = ({
             </Flex>
           ))}
           </Row>
+
+          {/* Navigation Controls */}
+          {controls && items.length > 1 && (
+            <>
+              {/* Previous Button */}
+              {activeIndex > 0 && (
+                <>
+                  <Fade
+                    transition="micro-medium"
+                    position="absolute"
+                    left="0"
+                    top="0"
+                    base="transparent"
+                    to="right"
+                    fillHeight
+                    maxWidth={6}
+                    zIndex={1}
+                  />
+                  <Flex
+                    position="absolute"
+                    left="16"
+                    zIndex={1}
+                    className={styles.navButton}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                  >
+                    <Flex radius="l" background="surface" overflow="hidden">
+                      <IconButton
+                        onClick={handlePrevClick}
+                        variant="secondary"
+                        icon="chevronLeft"
+                        aria-label="Previous slide"
+                      />
+                    </Flex>
+                  </Flex>
+                </>
+              )}
+
+              {/* Next Button */}
+              {activeIndex < items.length - 1 && (
+                <>
+                  <Fade
+                    transition="micro-medium"
+                    position="absolute"
+                    right="0"
+                    top="0"
+                    base="transparent"
+                    to="left"
+                    fillHeight
+                    zIndex={1}
+                    maxWidth={6}
+                  />
+                  <Flex
+                    position="absolute"
+                    right="16"
+                    zIndex={1}
+                    className={styles.navButton}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                  >
+                    <Flex radius="l" background="surface" overflow="hidden">
+                      <IconButton
+                        onClick={handleNextClick}
+                        variant="secondary"
+                        icon="chevronRight"
+                        aria-label="Next slide"
+                      />
+                    </Flex>
+                  </Flex>
+                </>
+              )}
+            </>
+          )}
         </Flex>
-
-        {/* Navigation Controls */}
-        {controls && items.length > 1 && (
-          <>
-            {/* Previous Button */}
-            {activeIndex > 0 && (
-              <Flex
-                position="absolute"
-                left="16"
-                zIndex={1}
-                className={styles.navButton}
-                style={{ top: "50%", transform: "translateY(-50%)" }}
-              >
-                <Flex radius="l" background="surface" overflow="hidden">
-                  <IconButton
-                    onClick={handlePrevClick}
-                    variant="secondary"
-                    icon="chevronLeft"
-                    aria-label="Previous slide"
-                  />
-                </Flex>
-              </Flex>
-            )}
-
-            {/* Next Button */}
-            {activeIndex < items.length - 1 && (
-              <Flex
-                position="absolute"
-                right="16"
-                zIndex={1}
-                className={styles.navButton}
-                style={{ top: "50%", transform: "translateY(-50%)" }}
-              >
-                <Flex radius="l" background="surface" overflow="hidden">
-                  <IconButton
-                    onClick={handleNextClick}
-                    variant="secondary"
-                    icon="chevronRight"
-                    aria-label="Next slide"
-                  />
-                </Flex>
-              </Flex>
-            )}
-          </>
-        )}
       </Flex>
 
       {/* Dot Indicators */}
@@ -345,7 +375,7 @@ const Swiper: React.FC<SwiperProps> = ({
       )}
     </Column>
   );
-};
+});
 
 Swiper.displayName = "Swiper";
 export { Swiper };

@@ -8,16 +8,17 @@ import React, {
   useCallback,
   ReactNode,
 } from "react";
-import classNames from "classnames";
+import classNames from "clsx";
 import { Column, Row, Text, Spinner } from ".";
 import styles from "./Input.module.scss";
 import { useDebounce } from "../hooks/useDebounce";
+import { TShirtSizes } from "../types";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string;
   label?: string;
   placeholder?: string;
-  height?: "xs" | "s" | "m" | "l" | "xl";
+  height?: TShirtSizes;
   error?: boolean;
   errorMessage?: ReactNode;
   description?: ReactNode;

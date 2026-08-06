@@ -1,4 +1,5 @@
 import React from 'react';
+import { safeScriptJson } from '../utils/safe-html';
 
 interface ThemeConfig {
   theme: string;
@@ -27,7 +28,7 @@ export const ThemeInit: React.FC<ThemeInitProps> = ({ config }) => {
           (function() {
             try {
               const root = document.documentElement;
-              const config = ${JSON.stringify(config)};
+              const config = ${safeScriptJson(config)};
 
               // Apply config defaults FIRST (prevents FOUC)
               Object.entries(config).forEach(([key, value]) => {
@@ -39,7 +40,9 @@ export const ThemeInit: React.FC<ThemeInitProps> = ({ config }) => {
                   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 }
                 return themeValue;
-              };
+};
+
+ThemeInit.displayName = "ThemeInit";
 
               // Priority:
               // 1. localStorage
@@ -67,3 +70,5 @@ export const ThemeInit: React.FC<ThemeInitProps> = ({ config }) => {
     />
   );
 };
+
+ThemeInit.displayName = "ThemeInit";

@@ -1,24 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { forwardRef } from "react";
 import { DropdownWrapper, EmojiPicker } from ".";
-import { StyleProps, gridSize } from "..";
+import { StyleProps, GridSize } from "..";
 
 export interface EmojiPickerDropdownProps
   extends Omit<React.ComponentProps<typeof DropdownWrapper>, "dropdown"> {
   onSelect: (emoji: string) => void;
   background?: StyleProps["background"];
-  columns?: gridSize;
+  columns?: GridSize;
 }
 
-const EmojiPickerDropdown: React.FC<EmojiPickerDropdownProps> = ({
+const EmojiPickerDropdown = forwardRef<HTMLDivElement, EmojiPickerDropdownProps>(({
   trigger,
   onSelect,
   closeAfterClick = true,
   background = "surface",
   columns = "8",
   ...dropdownProps
-}) => {
+}, ref) => {
   const handleEmojiSelect = (emoji: string) => {
     onSelect(emoji);
     if (closeAfterClick) {
@@ -42,6 +42,7 @@ const EmojiPickerDropdown: React.FC<EmojiPickerDropdownProps> = ({
       }
     />
   );
-};
+})
 
+EmojiPickerDropdown.displayName = "EmojiPickerDropdown";
 export { EmojiPickerDropdown };

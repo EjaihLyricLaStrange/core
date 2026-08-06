@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { Column, Row, Toast } from ".";
 import styles from "./Toaster.module.scss";
+import classNames from "clsx";
 import { useLayout } from "../contexts";
-import classNames from "classnames";
 import { ToastPosition } from "../types";
 
 interface ToasterProps {
   toasts: {
     id: string;
-    variant: "success" | "danger";
+    variant: "success" | "danger" | "warning" | "info";
     message: React.ReactNode;
     action?: React.ReactNode;
   }[];
@@ -23,7 +23,7 @@ interface ToasterProps {
   xs?: ToastPosition;
 }
 
-const Toaster: React.FC<ToasterProps> = ({ toasts, removeToast, xl, l, m, s, xs }) => {
+const Toaster = forwardRef<HTMLDivElement, ToasterProps>(({ toasts, removeToast, xl, l, m, s, xs }, ref) => {
   const [mounted, setMounted] = useState(false);
   const { currentBreakpoint } = useLayout();
 
@@ -95,7 +95,7 @@ const Toaster: React.FC<ToasterProps> = ({ toasts, removeToast, xl, l, m, s, xs 
     </Column>,
     document.body,
   );
-};
+})
 
 Toaster.displayName = "Toaster";
 export { Toaster };

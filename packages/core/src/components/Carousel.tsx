@@ -1,8 +1,17 @@
 "use client";
 
-import { SpacingToken } from "@/types";
-import { Flex, RevealFx, Scroller, Media, Column, Row, IconButton, Fade } from ".";
-import { useEffect, useState, useRef } from "react";
+import { SpacingToken } from "../types";
+import {
+  Flex,
+  RevealFx,
+  Scroller,
+  Media,
+  Column,
+  Row,
+  IconButton,
+  Fade,
+} from ".";
+import { useEffect, useState, useRef, forwardRef } from "react";
 import styles from "./Carousel.module.scss";
 
 interface CarouselItem {
@@ -25,12 +34,18 @@ interface CarouselProps extends React.ComponentProps<typeof Flex> {
   translateY?: SpacingToken | number;
   aspectRatio?: string;
   sizes?: string;
+  unoptimized?: boolean;
   revealedByDefault?: boolean;
   thumbnail?: ThumbnailItem;
-  play?: { auto?: boolean, interval?: number, controls?: boolean, progress?: boolean };
+  play?: {
+    auto?: boolean;
+    interval?: number;
+    controls?: boolean;
+    progress?: boolean;
+  };
 }
 
-const Carousel: React.FC<CarouselProps> = ({
+const Carousel = forwardRef<HTMLDivElement, CarouselProps>(({
   items = [],
   fill = false,
   controls = true,
@@ -39,13 +54,14 @@ const Carousel: React.FC<CarouselProps> = ({
   translateY,
   aspectRatio = "original",
   sizes,
+  unoptimized = false,
   revealedByDefault = false,
   thumbnail = { scaling: 1, height: "80", sizes: "120px" },
   play = { auto: false, interval: 3000, controls: true },
   ...flex
-}) => {
+}, ref) => {
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [hoverIndex, setHoverIndex] = useState<number|undefined>(0);
+  const [hoverIndex, setHoverIndex] = useState<number | undefined>(0);
   const [isTransitioning, setIsTransitioning] = useState(revealedByDefault);
   const [initialTransition, setInitialTransition] = useState(revealedByDefault);
   const [isPlaying, setIsPlaying] = useState<boolean>(play.auto || false);
@@ -177,7 +193,7 @@ const Carousel: React.FC<CarouselProps> = ({
 
   // Toggle play/pause function
   const togglePlayPause = () => {
-    setIsPlaying(prev => !prev);
+    setIsPlaying((prev) => !prev);
   };
 
   if (items.length === 0) {
@@ -185,18 +201,17 @@ const Carousel: React.FC<CarouselProps> = ({
   }
 
   return (
-    <Column fillWidth fillHeight={fill} gap="8" {...flex} aspectRatio={undefined} style={{ isolation: "isolate" }}>
+    <Column
+      fillWidth
+      fillHeight={fill}
+      gap="8"
+      {...flex}
+      aspectRatio={undefined}
+      style={{ isolation: "isolate" }}
+    >
       {items.length > 1 && play.controls && play.auto && (
-        <Flex
-          position="absolute"
-          top="16"
-          right="16"
-          zIndex={1}
-        >
-          <Flex
-            radius="m"
-            background="surface"
-          >
+        <Flex position="absolute" top="16" right="16" zIndex={1}>
+          <Flex radius="m" background="surface">
             <IconButton
               onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
@@ -244,11 +259,18 @@ const Carousel: React.FC<CarouselProps> = ({
           <Media
             fill={fill}
             sizes={sizes}
+            unoptimized={unoptimized}
             priority={priority}
             radius={flex.radius || "l"}
             border={flex.border || "neutral-alpha-weak"}
             overflow="hidden"
-            aspectRatio={fill ? undefined : aspectRatio === "auto" ? undefined : aspectRatio}
+            aspectRatio={
+              fill
+                ? undefined
+                : aspectRatio === "auto"
+                  ? undefined
+                  : aspectRatio
+            }
             src={items[activeIndex]?.slide as string}
             alt={items[activeIndex]?.alt || ""}
           />
@@ -258,7 +280,13 @@ const Carousel: React.FC<CarouselProps> = ({
             overflow="hidden"
             radius={flex.radius || "l"}
             border={flex.border || "neutral-alpha-weak"}
-            aspectRatio={fill ? undefined : aspectRatio === "auto" ? undefined : aspectRatio}
+            aspectRatio={
+              fill
+                ? undefined
+                : aspectRatio === "auto"
+                  ? undefined
+                  : aspectRatio
+            }
           >
             {items[activeIndex]?.slide}
           </Flex>
@@ -290,6 +318,7 @@ const Carousel: React.FC<CarouselProps> = ({
                     className={styles.fade}
                     position="absolute"
                     left="0"
+                    base="transparent"
                     top="0"
                     to="right"
                     fillHeight
@@ -336,6 +365,7 @@ const Carousel: React.FC<CarouselProps> = ({
                     position="absolute"
                     right="0"
                     top="0"
+                    base="transparent"
                     to="left"
                     fillHeight
                     maxWidth={6}
@@ -373,8 +403,21 @@ const Carousel: React.FC<CarouselProps> = ({
             left="0"
             zIndex={1}
           >
-            <Row radius="full" background="neutral-alpha-weak" height="2" fillWidth>
-              <Row radius="full" solid="brand-strong" style={{ width: `${progressPercent}%`, transition: `width 0.05s linear` }} fillHeight />
+            <Row
+              radius="full"
+              background="neutral-alpha-weak"
+              height="2"
+              fillWidth
+            >
+              <Row
+                radius="full"
+                solid="brand-strong"
+                style={{
+                  width: `${progressPercent}%`,
+                  transition: `width 0.05s linear`,
+                }}
+                fillHeight
+              />
             </Row>
           </Row>
         )}
@@ -394,7 +437,9 @@ const Carousel: React.FC<CarouselProps> = ({
                   vertical="center"
                 >
                   <Flex
-                    className={activeIndex === index ? styles.active : styles.inactive}
+                    className={
+                      activeIndex === index ? styles.active : styles.inactive
+                    }
                     radius="full"
                     transition="micro-short"
                     fillWidth
@@ -426,6 +471,7 @@ const Carousel: React.FC<CarouselProps> = ({
                       alt={item.alt || ""}
                       aspectRatio={aspectRatio}
                       sizes={thumbnail.sizes}
+                      unoptimized={unoptimized}
                       src={item.slide}
                       cursor="interactive"
                       radius="m"
@@ -440,7 +486,10 @@ const Carousel: React.FC<CarouselProps> = ({
                       overflow="hidden"
                       fill
                     >
-                      <Flex fill style={{ transform: `scale(${thumbnail.scaling})` }}>
+                      <Flex
+                        fill
+                        style={{ transform: `scale(${thumbnail.scaling})` }}
+                      >
                         {item.slide}
                       </Flex>
                     </Flex>
@@ -453,7 +502,7 @@ const Carousel: React.FC<CarouselProps> = ({
       )}
     </Column>
   );
-};
+})
 
 Carousel.displayName = "Carousel";
 export { Carousel };

@@ -1,16 +1,16 @@
 "use client";
 
 import React, { forwardRef, ReactNode } from "react";
-import classNames from "classnames";
+import classNames from "clsx";
 
 import { Flex, Text, Icon, Row } from ".";
 import styles from "./Tag.module.scss";
 import { IconName } from "../icons";
-import { ColorScheme } from "@/types";
+import { ColorScheme, CondensedTShirtSizes } from "../types";
 
 interface TagProps extends React.ComponentProps<typeof Flex> {
   variant?: ColorScheme | "gradient";
-  size?: "s" | "m" | "l";
+  size?: CondensedTShirtSizes;
   label?: string;
   prefixIcon?: IconName;
   suffixIcon?: IconName;

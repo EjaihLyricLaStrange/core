@@ -1,11 +1,13 @@
 ---
 title: "CodeBlock"
 summary: "A versatile component for displaying and formatting code snippets with syntax highlighting, copy functionality, and interactive previews."
-updatedAt: "2025-05-14"
+updatedAt: "2026-07-27"
 github: "modules/code/CodeBlock.tsx"
 docs: "once-ui/modules/codeBlock.mdx"
 navLabel: "CodeBlock"
 navIcon: "modules"
+navTag: "Update"
+navTagVariant: "success"
 ---
 
 The `CodeBlock` component provides a way to display code snippets with syntax highlighting, interactive tabs for multiple code examples, and optional live previews. It supports various customization options including copy buttons, fullscreen mode, and line numbers.
@@ -278,6 +280,7 @@ Use the `highlight` prop to highlight specific lines of code. The value should b
 
 <CodeBlock
   marginTop="16"
+  isCollapsible={false}
   marginBottom="24"
   codes={[
     {
@@ -319,6 +322,7 @@ Display Git-style diffs by setting the language to "diff". Numbering can be used
   preview={
     <CodeBlock
       copyButton={false}
+      isCollapsible={false}
       codes={[
         {
           language: "diff",
@@ -379,6 +383,7 @@ You can enable syntax highlighting by specifying a similar array as the language
     preview={
         <CodeBlock
             copyButton={false}
+            isCollapsible={false}
             codes={[
                 {
                     language: [ "diff", "typescript" ],
@@ -437,6 +442,7 @@ The `CodeBlock` component supports additional features like fullscreen mode and 
 
 <CodeBlock
   marginTop="16"
+  isCollapsible={false}
   marginBottom="24"
   fullscreenButton
   styleButton
@@ -464,6 +470,147 @@ renderResults(data);"
   ]}
 />
 
+## Collapsible
+
+Use `maxLines` to limit code height and show a "View code" overlay for expandable code blocks. `isCollapsible` must be enabled for the overlay to appear.
+
+<CodeBlock
+  marginTop="16"
+  marginBottom="24"
+  isCollapsible
+  preview={
+    <CodeBlock
+      isCollapsible
+      maxLines={3}
+      codes={[
+        {
+          language: "tsx",
+          label: "Collapsible",
+          code: "function greet(name: string) {\n  return `Hello, ${name}!`;\n}\n\nfunction farewell(name: string) {\n  return `Goodbye, ${name}!`;\n}\n\nconst result = greet('World');\nconsole.log(result);"
+        }
+      ]}
+    />
+  }
+  codes={[
+    {
+      code:
+`<CodeBlock
+    isCollapsible
+    maxLines={3}
+    codes={[
+      {
+        language: "tsx",
+        label: "Collapsible",
+        code: "function greet(name) {\n  return \`Hello, \${name}!\`;\n}"
+      }
+    ]}
+/>`,
+      language: "tsx",
+      label: "Collapsible"
+    }
+  ]}
+/>
+
+## Custom background
+
+Use the `background` prop to change the CodeBlock's outer background. Combine with alpha tokens for transparency effects.
+
+<CodeBlock
+  marginTop="16"
+  marginBottom="24"
+  background="brand-alpha-weak"
+  codes={[
+    {
+      language: "tsx",
+      label: "Custom background",
+      code:
+`<CodeBlock
+    background="brand-alpha-weak"
+    codes={[
+      {
+        language: "tsx",
+        label: "Custom background",
+        code: "console.log('Styled code block');"
+      }
+    ]}
+/>`
+    }
+  ]}
+/>
+
+### Custom colors
+
+Pass any color via `style.backgroundColor` &mdash; the button wrappers automatically pick it up.
+
+<CodeBlock
+  marginTop="16"
+  marginBottom="24"
+  style={{ backgroundColor: "rgba(255, 0, 128, 0.2)" }}
+  codes={[
+    {
+      language: "tsx",
+      label: "Magenta (50%)",
+      code:
+`<CodeBlock
+    style={{ backgroundColor: "rgba(255, 0, 128, 0.2)" }}
+    codes={[
+      {
+        language: "tsx",
+        label: "Magenta",
+        code: "console.log('magenta');"
+      }
+    ]}
+/>`
+    }
+  ]}
+/>
+
+<CodeBlock
+  marginTop="16"
+  marginBottom="24"
+  style={{ backgroundColor: "rgba(255, 192, 203, 0.2)" }}
+  codes={[
+    {
+      language: "tsx",
+      label: "Pink (50%)",
+      code:
+`<CodeBlock
+    style={{ backgroundColor: "rgba(255, 192, 203, 0.2)" }}
+    codes={[
+      {
+        language: "tsx",
+        label: "Pink",
+        code: "console.log('pink');"
+      }
+    ]}
+/>`
+    }
+  ]}
+/>
+
+<CodeBlock
+  marginTop="16"
+  marginBottom="24"
+  style={{ backgroundColor: "rgba(0, 188, 212, 0.2)" }}
+  codes={[
+    {
+      language: "tsx",
+      label: "Cyan (50%)",
+      code:
+`<CodeBlock
+    style={{ backgroundColor: "rgba(0, 188, 212, 0.2)" }}
+    codes={[
+      {
+        language: "tsx",
+        label: "Cyan",
+        code: "console.log('cyan');"
+      }
+    ]}
+/>`
+    }
+  ]}
+/>
+
 ## API reference
 
 <PropsTable
@@ -475,10 +622,13 @@ renderResults(data);"
     ["reloadButton", "boolean", "false"],
     ["fullscreenButton", "boolean", "false"],
     ["compact", "boolean", "false"],
+    ["isCollapsible", "boolean", "false"],
     ["lineNumbers", "boolean", "false"],
     ["codeHeight", "number"],
+    ["maxLines", "number"],
     ["fillHeight", "boolean", "false"],
     ["previewPadding", "SpacingToken", "'l'"],
+    ["background", "Colors | 'surface' | 'overlay' | 'page' | 'transparent'", "'surface'"],
     ["onInstanceChange", "(index: number) => void"],
     ["...flex"]
   ]}
